@@ -1,0 +1,726 @@
+{
+	"info": {
+		"_postman_id": "a3f0cb80-2caf-4020-9dd7-dc694009f07a",
+		"name": "clima",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "39952947"
+	},
+	"item": [
+		{
+			"name": "fluxos encadeados",
+			"item": [
+				{
+					"name": "buscar clima de cidade",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const jsonData = pm.response.json();\r",
+									"\r",
+									"// Armazena o ID da cidade no ambiente\r",
+									"pm.environment.set(\"cityId\", jsonData.id);\r",
+									"\r",
+									"pm.test(\"ID da cidade foi armazenado\", function () {\r",
+									"    pm.expect(pm.environment.get(\"cityId\")).to.exist;\r",
+									"});\r",
+									"\r",
+									"// Validar código de status\r",
+									"pm.test(\"Código de status é 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"// Verificar estrutura básica do JSON\r",
+									"pm.test(\"Estrutura básica do JSON está presente\", function () {\r",
+									"    pm.expect(jsonData).to.have.property(\"main\");\r",
+									"    pm.expect(jsonData).to.have.property(\"weather\");\r",
+									"    pm.expect(jsonData).to.have.property(\"wind\");\r",
+									"    pm.expect(jsonData.main).to.have.property(\"temp\");\r",
+									"    pm.expect(jsonData.main).to.have.property(\"humidity\");\r",
+									"    pm.expect(jsonData.wind).to.have.property(\"speed\");\r",
+									"});\r",
+									"\r",
+									"// Validar temperatura\r",
+									"pm.test(\"Temperatura está em uma faixa esperada\", function () {\r",
+									"    const tempInCelsius = jsonData.main.temp - 273.15;\r",
+									"    pm.expect(tempInCelsius).to.be.above(-10);\r",
+									"    pm.expect(tempInCelsius).to.be.below(45);\r",
+									"});\r",
+									"\r",
+									"// Validar velocidade do vento\r",
+									"pm.test(\"Velocidade do vento está em um intervalo esperado\", function () {\r",
+									"    const windSpeed = jsonData.wind.speed;\r",
+									"    pm.expect(windSpeed).to.be.above(0);\r",
+									"    pm.expect(windSpeed).to.be.below(150);\r",
+									"});\r",
+									"\r",
+									"// Validar descrição do clima\r",
+									"pm.test(\"Descrição do clima está presente\", function () {\r",
+									"    const description = jsonData.weather[0].description;\r",
+									"    pm.expect(description).to.be.a(\"string\");\r",
+									"    pm.expect(description).to.not.be.empty;\r",
+									"});\r",
+									"\r",
+									"// Validar umidade\r",
+									"pm.test(\"Umidade está em uma faixa válida\", function () {\r",
+									"    const humidity = jsonData.main.humidity;\r",
+									"    pm.expect(humidity).to.be.at.least(0);\r",
+									"    pm.expect(humidity).to.be.at.most(100);\r",
+									"});\r",
+									"\r",
+									"// Validar pressão atmosférica\r",
+									"pm.test(\"Pressão atmosférica está em uma faixa válida\", function () {\r",
+									"    const pressure = jsonData.main.pressure;\r",
+									"    pm.expect(pressure).to.be.above(900);\r",
+									"    pm.expect(pressure).to.be.below(1100);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/weather?q={{cityName}}&appid={{apiKey}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"weather"
+							],
+							"query": [
+								{
+									"key": "q",
+									"value": "{{cityName}}"
+								},
+								{
+									"key": "appid",
+									"value": "{{apiKey}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "buscar previsão do tempo",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// valida o código de status\r",
+									"pm.test(\"Status Code é 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"// valida que o tempo de resposta é menor que 2000ms\r",
+									"pm.test(\"Tempo de resposta é menor que 2000ms\", function () {\r",
+									"    pm.expect(pm.response.responseTime).to.be.below(2000);\r",
+									"});\r",
+									"\r",
+									"// extrai e processa os dados da resposta\r",
+									"const jsonData = pm.response.json();\r",
+									"\r",
+									"// extrair apenas as previsões para o primeiro dia\r",
+									"const firstDayForecast = jsonData.list.slice(0, 8); // 8 registros para o primeiro dia\r",
+									"console.log(firstDayForecast);\r",
+									"\r",
+									"// validações específicas para as previsões do primeiro dia\r",
+									"pm.test(\"Primeiro dia contém 8 registros\", function () {\r",
+									"    pm.expect(firstDayForecast.length).to.eql(8); // Deve conter exatamente 8 registros\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Campos esperados estão presentes no primeiro registro do primeiro dia\", function () {\r",
+									"    const firstRecord = firstDayForecast[0]; // primeiro registro do primeiro dia\r",
+									"\r",
+									"    // validações principais\r",
+									"    // Data e hora do registro\r",
+									"    pm.expect(firstRecord).to.have.property(\"dt\"); \r",
+									"    // Dados principais\r",
+									"    pm.expect(firstRecord).to.have.property(\"main\"); \r",
+									"    // Temperatura\r",
+									"    pm.expect(firstRecord.main).to.have.property(\"temp\"); \r",
+									"    // Umidade\r",
+									"    pm.expect(firstRecord.main).to.have.property(\"humidity\"); \r",
+									"    // Informações do clima\r",
+									"    pm.expect(firstRecord).to.have.property(\"weather\"); \r",
+									"    \r",
+									"    pm.expect(firstRecord.weather[0]).to.have.property(\"description\"); // Descrição do clima\r",
+									"    \r",
+									"    // Informações sobre o vento\r",
+									"    pm.expect(firstRecord).to.have.property(\"wind\"); \r",
+									"});\r",
+									"\r",
+									"// valida que a temperatura do primeiro registro está em um intervalo esperado\r",
+									"pm.test(\"Temperatura do primeiro registro está em um intervalo esperado\", function () {\r",
+									"    const tempInKelvin = firstDayForecast[0].main.temp;\r",
+									"\r",
+									"    // converte Kelvin para Celsius\r",
+									"    const tempInCelsius = tempInKelvin - 273.15;\r",
+									"\r",
+									"    // valida que a temperatura está entre -10 e 45 graus Celsius\r",
+									"    pm.expect(tempInCelsius).to.be.above(-10);\r",
+									"    pm.expect(tempInCelsius).to.be.below(45);\r",
+									"});\r",
+									"\r",
+									"// valida que a umidade está em um intervalo válido\r",
+									"pm.test(\"Umidade do primeiro registro está em um intervalo válido\", function () {\r",
+									"    const humidity = firstDayForecast[0].main.humidity;\r",
+									"\r",
+									"    // Valida que a umidade está entre 0 e 100%\r",
+									"    pm.expect(humidity).to.be.at.least(0);\r",
+									"    pm.expect(humidity).to.be.at.most(100);\r",
+									"});\r",
+									"\r",
+									"// verifica que cada registro no primeiro dia contém a descrição do clima\r",
+									"pm.test(\"Todos os registros do primeiro dia possuem descrição do clima\", function () {\r",
+									"    firstDayForecast.forEach(record => {\r",
+									"        pm.expect(record.weather[0]).to.have.property(\"description\"); // cada registro deve ter uma descrição\r",
+									"    });\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/forecast?id={{cityId}}&appid={{apiKey}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"forecast"
+							],
+							"query": [
+								{
+									"key": "id",
+									"value": "{{cityId}}"
+								},
+								{
+									"key": "appid",
+									"value": "{{apiKey}}"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "cenários negativos",
+			"item": [
+				{
+					"name": "cidade inválida",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Código de status é 404\", function () {\r",
+									"    pm.response.to.have.status(404);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Mensagem de erro é 'city not found'\", function () {\r",
+									"    const jsonData = pm.response.json();\r",
+									"    pm.expect(jsonData.message).to.eql(\"city not found\");\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/weather?q=cidadw&appid={{apiKey}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"weather"
+							],
+							"query": [
+								{
+									"key": "q",
+									"value": "cidadw"
+								},
+								{
+									"key": "appid",
+									"value": "{{apiKey}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "falta de parâmetro",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Código de status é 400\", function () {\r",
+									"    pm.response.to.have.status(400);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Mensagem de erro é 'Nothing to geocode'\", function () {\r",
+									"    const jsonData = pm.response.json();\r",
+									"    pm.expect(jsonData.message).to.include(\"Nothing to geocode\");\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/weather?appid={{apiKey}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"weather"
+							],
+							"query": [
+								{
+									"key": "appid",
+									"value": "{{apiKey}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "api key inválida",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Código de status é 401\", function () {\r",
+									"    pm.response.to.have.status(401);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Mensagem de erro é 'Invalid API key'\", function () {\r",
+									"    const jsonData = pm.response.json();\r",
+									"    pm.expect(jsonData.message).to.include(\"Invalid API key\");\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/weather?q=São Paulo&appid=cee29sjeuutr90QQdw",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"weather"
+							],
+							"query": [
+								{
+									"key": "q",
+									"value": "São Paulo"
+								},
+								{
+									"key": "appid",
+									"value": "cee29sjeuutr90QQdw"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "api key ausente",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Código de status é 401\", function () {\r",
+									"    pm.response.to.have.status(401);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Mensagem de erro é 'Invalid API key'\", function () {\r",
+									"    const jsonData = pm.response.json();\r",
+									"    pm.expect(jsonData.message).to.include(\"Invalid API key\");\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/weather?q=São Paulo",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"weather"
+							],
+							"query": [
+								{
+									"key": "q",
+									"value": "São Paulo"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "valores não numéricos",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Código de status é 400 ou 200\", function () {\r",
+									"    pm.expect([400, 200]).to.include(pm.response.code);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Mensagem de erro ou resposta válida\", function () {\r",
+									"    const jsonData = pm.response.json();\r",
+									"    if (pm.response.code === 400) {\r",
+									"        pm.expect(jsonData.message).to.include(\"invalid\");\r",
+									"    } else {\r",
+									"        pm.expect(jsonData.coord).to.have.property(\"lat\");\r",
+									"    }\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/weather?q=São Paulo&appid={{apiKey}}&lat=abc",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"weather"
+							],
+							"query": [
+								{
+									"key": "q",
+									"value": "São Paulo"
+								},
+								{
+									"key": "appid",
+									"value": "{{apiKey}}"
+								},
+								{
+									"key": "lat",
+									"value": "abc"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "buscar clima atual",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"// Verificar se o código de status da resposta é 200 (OK)\r",
+							"pm.test(\"Status Code é 200\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							"\r",
+							"// Validar que a temperatura está presente\r",
+							"pm.test(\"Temperatura está presente\", function () {\r",
+							"    const jsonData = pm.response.json();\r",
+							"    pm.expect(jsonData.main).to.have.property(\"temp\");\r",
+							"});\r",
+							"\r",
+							"// Validar o tempo de resposta da API\r",
+							"pm.test(\"Tempo de resposta é menor que 2000ms\", function () {\r",
+							"    pm.expect(pm.response.responseTime).to.be.below(2000);\r",
+							"});\r",
+							"\r",
+							"// Validar a pressão atmosférica\r",
+							"pm.test(\"Pressão atmosférica está em um intervalo esperado\", function () {\r",
+							"    const jsonData = pm.response.json();\r",
+							"    const pressure = jsonData.main.pressure;\r",
+							"    pm.expect(pressure).to.be.above(900);\r",
+							"    pm.expect(pressure).to.be.below(1100);\r",
+							"});\r",
+							"\r",
+							"// Validar a velocidade do vento\r",
+							"pm.test(\"Velocidade do vento está em um intervalo esperado\", function () {\r",
+							"    const jsonData = pm.response.json();\r",
+							"    const windSpeed = jsonData.wind.speed;\r",
+							"    pm.expect(windSpeed).to.be.above(0);\r",
+							"    pm.expect(windSpeed).to.be.below(150);\r",
+							"});\r",
+							"\r",
+							"// Validar que a descrição do clima está presente e válida\r",
+							"pm.test(\"Descrição do clima está presente e válida\", function () {\r",
+							"    const jsonData = pm.response.json();\r",
+							"    const description = jsonData.weather[0].description;\r",
+							"    pm.expect(description).to.be.a(\"string\");\r",
+							"    pm.expect(description).to.not.be.empty;\r",
+							"});\r",
+							"\r",
+							"// Validar que a umidade está em um intervalo válido\r",
+							"pm.test(\"Umidade está em um intervalo válido\", function () {\r",
+							"    const jsonData = pm.response.json();\r",
+							"    const humidity = jsonData.main.humidity;\r",
+							"    pm.expect(humidity).to.be.at.least(0);\r",
+							"    pm.expect(humidity).to.be.at.most(100);\r",
+							"});\r",
+							"\r",
+							"// Validar que o código do país está presente e válido\r",
+							"pm.test(\"Código do país está presente e válido\", function () {\r",
+							"    const jsonData = pm.response.json();\r",
+							"    const countryCode = jsonData.sys.country;\r",
+							"    pm.expect(countryCode).to.be.a(\"string\");\r",
+							"    pm.expect(countryCode).to.have.length(2);\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"// Lista de capitais dos estados brasileiros em ordem alfabética\r",
+							"const cities = [\r",
+							"    \"Aracaju\", \"Belem\", \"Belo Horizonte\", \"Boa Vista\", \"Brasilia\",\r",
+							"    \"Campo Grande\", \"Cuiaba\", \"Curitiba\", \"Florianopolis\", \"Fortaleza\",\r",
+							"    \"Goiania\", \"Joao Pessoa\", \"Macapa\", \"Maceio\", \"Manaus\",\r",
+							"    \"Natal\", \"Palmas\", \"Porto Alegre\", \"Recife\", \"Rio Branco\",\r",
+							"    \"Rio de Janeiro\", \"El Salvador\", \"Sao Luis\", \"Sao Paulo\", \"Teresina\",\r",
+							"    \"Vitoria\"\r",
+							"];\r",
+							"\r",
+							"// Obter o índice atual do estado, ou iniciar do zero se não existir\r",
+							"let currentIndex = pm.environment.get(\"currentIndex\") || 0;\r",
+							"\r",
+							"// Atualizar a variável `cityName` com a capital correspondente\r",
+							"pm.environment.set(\"cityName\", cities[currentIndex]);\r",
+							"\r",
+							"// Incrementar índice para a próxima cidade (volta ao início após o último estado)\r",
+							"currentIndex = (currentIndex + 1) % cities.length;\r",
+							"pm.environment.set(\"currentIndex\", currentIndex);\r",
+							"\r",
+							"console.log(\"Base URL:\", pm.environment.get(\"baseUrl\"));\r",
+							"console.log(\"API Key:\", pm.environment.get(\"apiKey\"));\r",
+							"console.log(\"City Name:\", pm.environment.get(\"cityName\"));\r",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/weather?q={{cityName}}&appid={{apiKey}}",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"weather"
+					],
+					"query": [
+						{
+							"key": "q",
+							"value": "{{cityName}}"
+						},
+						{
+							"key": "appid",
+							"value": "{{apiKey}}"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "buscar clima dos estados br",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"// validar que o tempo de resposta da API é menor que 2000ms\r",
+							"pm.test(\"Tempo de resposta é menor que 2000ms\", function () {\r",
+							"    pm.expect(pm.response.responseTime).to.be.below(2000);\r",
+							"});\r",
+							"\r",
+							"// verificar se o código de status da resposta é 200 (OK)\r",
+							"pm.test(\"Status Code é 200\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							"\r",
+							"// verificar se a resposta contém a temperatura\r",
+							"pm.test(\"Temperatura está presente\", function () {\r",
+							"    const jsonData = pm.response.json(); // extrai o JSON da resposta\r",
+							"    pm.expect(jsonData.main).to.have.property(\"temp\"); // valida a existência da propriedade \"temp\"\r",
+							"});\r",
+							"\r",
+							"// validar a estrutura básica do JSON retornado pela API\r",
+							"pm.test(\"Estrutura básica do JSON está correta\", function () {\r",
+							"    const jsonData = pm.response.json();\r",
+							"    pm.expect(jsonData).to.have.property(\"name\"); // deve conter o nome da cidade\r",
+							"    pm.expect(jsonData).to.have.property(\"main\"); // deve conter informações principais\r",
+							"    pm.expect(jsonData).to.have.property(\"weather\"); // deve conter informações do clima\r",
+							"    pm.expect(jsonData).to.have.property(\"wind\"); // deve conter informações do vento\r",
+							"});\r",
+							"\r",
+							"// verificar se os tipos de dados das propriedades do JSON estão corretos\r",
+							"pm.test(\"Tipos de dados estão corretos\", function () {\r",
+							"    const jsonData = pm.response.json();\r",
+							"\r",
+							"    pm.expect(jsonData.name).to.be.a(\"string\"); // o nome da cidade deve ser uma string\r",
+							"    pm.expect(jsonData.main.temp).to.be.a(\"number\"); // a temperatura deve ser um número\r",
+							"    pm.expect(jsonData.weather[0].description).to.be.a(\"string\"); // a descrição do clima deve ser uma string\r",
+							"    pm.expect(jsonData.wind.speed).to.be.a(\"number\"); // a velocidade do vento deve ser um número\r",
+							"});\r",
+							"\r",
+							"// Validar que a descrição do clima está presente e tem um formato válido\r",
+							"// Lista de descrições climáticas válidas para o Brasil\r",
+							"const validDescriptions = [\r",
+							"    \"clear sky\", // Céu claro\r",
+							"    \"few clouds\", \"scattered clouds\", \"broken clouds\", \"overcast clouds\", // Nublado\r",
+							"    \"light rain\", \"moderate rain\", \"heavy intensity rain\", // Chuva\r",
+							"    \"very heavy rain\", \"shower rain\", \"heavy intensity shower rain\", // Chuva forte\r",
+							"    \"thunderstorm with light rain\", \"thunderstorm with rain\", // Tempestades leves\r",
+							"    \"thunderstorm with heavy rain\", \"light thunderstorm\", \"thunderstorm\", // Tempestades intensas\r",
+							"    \"mist\", \"fog\", // Névoa\r",
+							"    \"drizzle\", \"light intensity drizzle\", \"heavy intensity drizzle\" // Chuvisco\r",
+							"];\r",
+							"\r",
+							"// Teste: Valida se a descrição do clima está presente e é válida\r",
+							"pm.test(\"Descrição do clima está presente e válida\", function () {\r",
+							"    const jsonData = pm.response.json();\r",
+							"    const description = jsonData.weather[0].description;\r",
+							"\r",
+							"    // Valida que a descrição é uma string, não está vazia e está na lista válida\r",
+							"    pm.expect(description).to.be.a(\"string\");\r",
+							"    pm.expect(description).to.not.be.empty;\r",
+							"    pm.expect(validDescriptions).to.include(description);\r",
+							"});\r",
+							"\r",
+							"\r",
+							"\r",
+							"\r",
+							"// validar que a temperatura está em um intervalo esperado em graus Celsius\r",
+							"pm.test(\"Temperatura está em um intervalo esperado (Kelvin)\", function () {\r",
+							"    const jsonData = pm.response.json();\r",
+							"    const temp = jsonData.main.temp; // temperatura em Kelvin retornada pela API\r",
+							"\r",
+							"    // converte a temperatura de Kelvin para Celsius\r",
+							"    const tempInCelsius = temp - 273.15;\r",
+							"\r",
+							"    // valida se a temperatura em Celsius está entre -10 e 45 graus\r",
+							"    pm.expect(tempInCelsius).to.be.above(-10);\r",
+							"    pm.expect(tempInCelsius).to.be.below(45);\r",
+							"});\r",
+							"\r",
+							"// verificar se o array \"weather\" contém ao menos uma descrição do clima\r",
+							"pm.test(\"Clima contém descrição\", function () {\r",
+							"    const jsonData = pm.response.json();\r",
+							"    pm.expect(jsonData.weather.length).to.be.greaterThan(0); // o array deve ter pelo menos 1 item\r",
+							"    pm.expect(jsonData.weather[0]).to.have.property(\"description\"); // deve conter a propriedade \"description\"\r",
+							"});\r",
+							"\r",
+							"// validar que a umidade está em um intervalo válido de 0% a 100%\r",
+							"pm.test(\"Umidade está em um intervalo válido\", function () {\r",
+							"    const jsonData = pm.response.json();\r",
+							"    const humidity = jsonData.main.humidity; // Extrai o valor da umidade\r",
+							"\r",
+							"    // Valida que a umidade está entre 0% e 100%\r",
+							"    pm.expect(humidity).to.be.at.least(0);\r",
+							"    pm.expect(humidity).to.be.at.most(100);\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/weather?q={{cityName}}&appid={{apiKey}}",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"weather"
+					],
+					"query": [
+						{
+							"key": "q",
+							"value": "{{cityName}}"
+						},
+						{
+							"key": "appid",
+							"value": "{{apiKey}}"
+						}
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
